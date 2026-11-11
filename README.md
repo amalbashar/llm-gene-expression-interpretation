@@ -1,75 +1,137 @@
 # LLM Functional Interpretation of Differential Gene Expression
 
-This repository contains the notebooks and input data files used for LLM-based biological interpretation of colorectal adenoma differential gene-expression signatures, with comparison against GO Biological Process and KEGG enrichment results.
-
-It accompanies the manuscript:
+Code and data accompanying the manuscript:
 
 > **Evaluation of Large Language Models for Functional Interpretation of Differentially Expressed Genes**
 
-The goal of this workflow is not to replace GO or KEGG enrichment analysis, but to evaluate whether a large language model (LLM) can act as an assisting interpretive layer for summarizing gene-list signals into biological themes.
+This repository contains the notebooks, input gene lists, GO/KEGG enrichment files, figures and supplementary files used to evaluate large language models (LLMs) as an interpretive layer for colorectal adenoma differential gene-expression signatures, benchmarked against GO Biological Process and KEGG pathway enrichment.
+
+The workflow is **not** intended to replace GO or KEGG enrichment analysis. It tests whether an LLM, guided by structured prompts and rule-based checks, can summarise gene-list signals into biological themes that are traceable to the input genes and comparable with enrichment results.
+
+---
+
+## Contents
+
+1. [Datasets](#datasets)
+2. [Gene selection](#gene-selection)
+3. [Models and settings](#models-and-settings)
+4. [Reproducibility and model availability](#reproducibility-and-model-availability)
+5. [Repository structure](#repository-structure)
+6. [Quick start](#quick-start)
+7. [Input files](#input-files)
+8. [Workflow](#workflow)
+9. [Comparison rule](#comparison-rule-match--partial--unsupported)
+10. [Outputs](#outputs)
+11. [Interpretation and limitations](#interpretation-and-limitations)
+12. [License, citation and disclaimer](#license-citation-and-disclaimer)
+
+---
 
 ## Datasets
 
-| Folder name in this repository | GEO accession | Role in the manuscript | Platform | Groups |
+| Folder name in this repository | GEO accession | Role in the manuscript | Platform | Samples |
 |---|---|---|---|---|
-| `GSE8671` | [GSE8671](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE8671) | Discovery dataset | GPL570 | 32 normal mucosa vs 32 adenomas |
+| `GSE8671` | [GSE8671](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE8671) | Discovery dataset | GPL570 | 32 normal mucosa, 32 adenomas |
 | `VALIDATION` | [GSE50114](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE50114) | Validation dataset | GPL6480 | 37 vs 9 samples |
 
-Files named `VALIDATION` in this repository correspond to **GSE50114** in the manuscript.
+Files named `VALIDATION` in this repository correspond to **GSE50114** in the manuscript. The validation dataset was not used to change prompts or selection rules.
 
 ## Gene selection
 
-Differential expression was computed with GEO2R (limma). For GO/KEGG enrichment and LLM annotation, genes were first filtered to:
+Differential expression (normal mucosa vs adenoma) was computed with GEO2R (limma). For GO/KEGG enrichment and LLM annotation, genes were first filtered to:
 
 * **Up-regulated:** log2FC ≥ 1 and p < 0.05
 * **Down-regulated:** log2FC ≤ −1 and p < 0.05
 
-and the **50 genes in each direction with the smallest p-values** were selected (100 genes in total). The same rule was applied to both datasets, and GO/KEGG enrichment and the LLM received the same genes.
+The **50 genes in each direction with the smallest p-values** were then selected (100 genes per dataset). The same rule was applied to both datasets, and GO/KEGG enrichment and the LLM received exactly the same genes.
+
+This fixed list favours the most significant genes among those with at least a two-fold change; the effect of list size and selection rule was not tested.
 
 ## Models and settings
 
-* Models: **GPT-OSS-20B** and **GPT-OSS-120B**
-* Access: NVIDIA's OpenAI-compatible hosted API (`https://integrate.api.nvidia.com/v1`); no local GPU inference
-* Decoding: temperature 0; top-p and random seed left at provider defaults
-* Each prompt was sent as a single user-role message (no system message)
-* Notebooks were run in Google Colab
+| Setting | Value |
+|---|---|
+| Models | GPT-OSS-20B (primary), GPT-OSS-120B (comparison of model scale) |
+| Access | NVIDIA's OpenAI-compatible hosted API (`https://integrate.api.nvidia.com/v1`); no local GPU inference |
+| Environment | Python notebooks run in Google Colab |
+| Temperature | 0 |
+| Top-p, random seed | Left at provider defaults (not fixed) |
+| Message format | Each prompt sent as a single user-role message; no system message |
+| Run dates | GPT-OSS-20B: 12 June 2026; GPT-OSS-120B: 25 June 2026 |
 
-The exact prompt templates, model identifiers, decoding parameters, retry rules and number of runs are given in **Supplementary File S1** (`supplementary_tables/`).
+The exact prompt templates, model identifiers, decoding parameters, retry rules, number of runs and recorded runtimes are given in **Supplementary File S1** (`supplementary_tables/`).
 
-### Reproducibility note
+## Reproducibility and model availability
 
-The hosted API no longer serves these models, and top-p and seed were not fixed, so the exact LLM outputs cannot be regenerated. For this reason, **all notebooks are provided with their outputs saved**, and PDF copies of the executed notebooks are included in `notebooks/`. The evaluation code (hallucination check, GO/KEGG comparison, Jaccard-type overlap) can still be run on the saved outputs or on new data.
+* **GPT-OSS-120B** has since been retired from the NVIDIA hosted API (end of life 3 September 2026).
+* **GPT-OSS-20B** remained available on the API at the time of writing.
+* Because top-p and random seed were not fixed, **exact outputs cannot be regenerated with either model**, even where the model is still served.
 
-### API key
+For this reason, the outputs of all four runs reported in the manuscript (2 datasets × 2 models) are provided as **PDF copies of the executed notebooks** in `notebooks/`. These PDFs are the record of the reported results.
 
-The notebooks need an API key to call the model. Do **not** write the key into the notebook. Store it as an environment variable or a Colab secret and read it in the code.
+The same notebook code is used for every run; only the input files and the model name change. To apply the workflow to new data, set the model name and API endpoint in the notebook to a model that is currently available. The evaluation steps (hallucination check, GO/KEGG comparison, Jaccard-type overlap) then run on the new model outputs; results from a different model or provider are not expected to match the reported values.
 
 ## Repository structure
 
 ```text
 data/
-  GSE8671/      UP-50, DOWN-50 gene lists and GO/KEGG enrichment files (discovery)
-  VALIDATION/   UP-50, DOWN-50 gene lists and GO/KEGG enrichment files (GSE50114)
-notebooks/      Executed notebooks (.ipynb) and PDF copies, one per dataset and model
-figures/        Figures 1–7 of the manuscript
+  GSE8671/        UP-50 and DOWN-50 gene lists; GO-up, GO-down, KEGG-up, KEGG-down enrichment files (discovery)
+  VALIDATION/     Same six files for the validation dataset (GSE50114)
+notebooks/        Two notebook code files (.ipynb) and four PDF copies of the executed runs
+                  (GSE8671 and GSE50114, each with GPT-OSS-20B and GPT-OSS-120B)
+figures/          Figures 1–7 of the manuscript
 supplementary_tables/
-                LLM-predicted GO/KEGG profiles (discovery and validation),
-                Supplementary File S1 (prompts and settings) and
-                Supplementary Table S2 (literature-based biological plausibility)
+                  Supplementary File S1: prompts, settings and runtimes (PDF and Markdown)
+                  Supplementary Table S2: literature-based biological plausibility assessment (Excel)
+                  Supplementary GO/KEGG tables for the discovery (original) and validation datasets
+LICENSE
 README.md
 requirements.txt
 ```
 
-## Important Rule
+### Where each manuscript item comes from
 
-Do **not** rename the input data files randomly.
-The notebook depends on the dataset name inside the file names to automatically match the UP, DOWN, GO, and KEGG files.
+| Manuscript item | Source in this repository |
+|---|---|
+| Input genes (Top-50 up/down) | `data/<dataset>/UP-50-*.xlsx`, `DOWN-50-*.xlsx` |
+| GO/KEGG enrichment (Figures 3, 4, 6) | `data/<dataset>/GO-*.txt`, `KEGG-*.txt` |
+| Selected themes, hallucination check, theme-level comparison (Table 3) | Executed notebooks (`notebooks/*.pdf`) |
+| Profile-level comparison and Jaccard-type indices (Table 5, Figure 5) | Executed notebooks; supplementary GO/KEGG tables |
+| Biological plausibility (Table 4) | `supplementary_tables/Supplementary_Table_S2_Biological_Plausibility.xlsx` |
+| Prompts, settings and runtimes | `supplementary_tables/Supplementary_File_S1_Prompts_and_Settings.pdf` |
 
-## File Naming Rules
+## Quick start
 
-All files from the same dataset must use the exact same `DATASET_NAME`.
+1. Clone the repository and install the dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+2. Open the notebook in Google Colab or Jupyter.
+3. Provide your API key as an environment variable or a Colab secret, and make sure the notebook reads it from there. **Never write the key into the notebook or commit it to the repository.**
+4. Set the model name to a model that is currently available (see [model availability](#reproducibility-and-model-availability)).
+5. Check that `DATA_DIR` points to the folder of the dataset you want to run, and set the two input file names (see below).
+6. Run all cells. Output files are written to the working directory.
 
-For example, if the dataset name is `GSE8671`, the required file names are:
+## Input files
+
+### Important rule
+
+Do **not** rename the input data files randomly. The notebook uses the dataset name inside the file names to match the UP, DOWN, GO and KEGG files automatically.
+
+### File naming
+
+All files from the same dataset must use exactly the same `DATASETNAME`:
+
+```text
+UP-50-DATASETNAME.xlsx
+DOWN-50-DATASETNAME.xlsx
+GO-up-DATASETNAME.txt
+GO-down-DATASETNAME.txt
+KEGG-up-DATASETNAME.txt
+KEGG-down-DATASETNAME.txt
+```
+
+For example, for `GSE8671`:
 
 ```text
 UP-50-GSE8671.xlsx
@@ -80,53 +142,11 @@ KEGG-up-GSE8671.txt
 KEGG-down-GSE8671.txt
 ```
 
-The gene-list files should follow this format:
+The dataset name can be any name (for example `GSE8671`, `VALIDATION`, `DATASET2`, `COLON_ADENOMA`), as long as it is written identically in all six files. The notebook detects it from the UP and DOWN file names.
 
-```text
-UP-50-DATASETNAME.xlsx
-DOWN-50-DATASETNAME.xlsx
-```
+### Switching datasets
 
-The GO/KEGG enrichment files should follow this format:
-
-```text
-GO-up-DATASETNAME.txt
-GO-down-DATASETNAME.txt
-KEGG-up-DATASETNAME.txt
-KEGG-down-DATASETNAME.txt
-```
-
-## Dataset Name Rule
-
-The dataset name can be any name chosen by the user. It does not have to be `GSE8671` or `VALIDATION`.
-
-For example, the following dataset names are acceptable:
-
-```text
-GSE8671
-VALIDATION
-DATASET2
-TEST
-MYDATA
-COLON_ADENOMA
-```
-
-The only requirement is that the same dataset name must be written exactly the same in all related files.
-
-For example, if the chosen dataset name is `DATASET2`, the required files should be:
-
-```text
-UP-50-DATASET2.xlsx
-DOWN-50-DATASET2.xlsx
-GO-up-DATASET2.txt
-GO-down-DATASET2.txt
-KEGG-up-DATASET2.txt
-KEGG-down-DATASET2.txt
-```
-
-The notebook detects the dataset name automatically from the UP and DOWN gene-list files.
-
-To run another dataset, the user only needs to change these two file names at the beginning of the notebook:
+Only the two input file names at the beginning of the notebook need to change:
 
 ```python
 up_file = DATA_DIR / "UP-50-GSE8671.xlsx"
@@ -140,67 +160,56 @@ up_file = DATA_DIR / "UP-50-DATASET2.xlsx"
 down_file = DATA_DIR / "DOWN-50-DATASET2.xlsx"
 ```
 
-After that, the notebook will automatically search for the matching GO and KEGG files using the same dataset name.
+The notebook then finds the matching GO and KEGG files using the same dataset name. The code logic does not need to change.
 
-Therefore, the code logic does not need to be changed. Only the first two input file names should be updated when switching datasets.
+### Column requirements
 
-## Column Rules
-
-The UP and DOWN gene-list files should contain a gene-symbol column. Recommended column name:
+The UP and DOWN gene-list files must contain a gene-symbol column. Recommended name:
 
 ```text
 Gene.symbol
 ```
 
-The GO/KEGG enrichment files should contain columns for:
-
-* enrichment term or pathway name
-* enriched genes
-* adjusted p-value
-
-Common accepted column names include:
+The GO/KEGG enrichment files must contain columns for the term or pathway name, the enriched genes and the adjusted p-value. Accepted column names include:
 
 ```text
-Term
-Description
-Pathway
-Name
+Term, Description, Pathway, Name
 Genes
-Adjusted P-value
-Adjusted_P_value
-adj.P.Val
-FDR
-qvalue
+Adjusted P-value, Adjusted_P_value, adj.P.Val, FDR, qvalue
 ```
 
-## Main Workflow
+## Workflow
 
-The workflow includes:
+1. Load the pre-filtered Top-50 up-regulated and Top-50 down-regulated gene lists.
+2. Generate structured LLM-based biological interpretations (themes with direction, supporting genes, reasoning and confidence). No pathway names, statistics or enrichment results are given to the model in this step.
+3. Run self-consistency analysis.
+4. Apply API-based best-of-k candidate selection (three candidates).
+5. Check for hallucinated genes: every gene cited by the model must be present in the input lists.
+6. Compare the selected LLM themes with the real GO/KEGG enrichment results (theme level).
+7. Generate LLM-predicted GO-like and KEGG-like profiles (ten terms per database and direction).
+8. Compare the predicted profiles with the real Top-10 GO/KEGG terms (profile level) and compute Jaccard-type overlap indices.
+9. Apply theme stability analysis.
+10. Apply GO/KEGG significance caution flags.
 
-1. Loading pre-filtered Top-50 upregulated and Top-50 downregulated gene lists.
-2. Generating structured LLM-based biological interpretations.
-3. Running self-consistency analysis.
-4. Applying API-based best-of-k candidate selection.
-5. Checking for hallucinated genes.
-6. Comparing selected LLM themes with real GO/KEGG enrichment results.
-7. Generating LLM-predicted GO-like and KEGG-like profiles.
-8. Comparing predicted profiles with real Top-10 GO/KEGG enrichment results.
-9. Applying theme stability analysis.
-10. Applying GO/KEGG significance caution flags.
+## Comparison rule (Match / Partial / Unsupported)
 
-### Comparison rule (Match / Partial / Unsupported)
+Theme and reference-term names are lowercased and tokenized; tokens longer than two characters are kept, excluding stop words (*and, or, of, in, to, the, a, an, process, pathway, signaling, regulation, positive, negative, response*). Theme tokens are expanded with predefined synonym groups. For each reference term, the similarity score is the number of shared tokens plus twice the number of shared genes, and the highest-scoring term is retained. The theme or predicted term is then classified as:
 
-Each LLM theme or predicted term is compared with the GO/KEGG reference terms by shared genes and shared keywords:
+| Category | Rule |
+|---|---|
+| **Match** | The best-scoring reference term shares **at least two genes** and **at least one token**, and has **adjusted p ≤ 0.10** |
+| **Partial** | At least one shared gene or token, but not all Match criteria |
+| **Unsupported** | No shared genes or tokens |
 
-* **Match:** the best-scoring reference term shares at least two genes and one keyword, and has adjusted p ≤ 0.10
-* **Partial:** at least one shared gene or keyword, but not all Match criteria
-* **Unsupported:** no shared genes or keywords
+Theme-level evaluation compares each theme with all GO and KEGG terms for both directions. Profile-level evaluation compares each predicted term with the top ten enriched terms, ranked by adjusted p-value, in the same database and direction.
 
-Significance labels: adjusted p < 0.05 significant; 0.05–0.10 suggestive; > 0.10 not significant. The full rule is described in the Methods of the manuscript.
+**Jaccard-type overlap index.** J = k / (20 − k), where k is the number of Match predictions (strict index) or Match + Partial predictions (partial index) among ten predictions compared with ten reference terms. Because one-to-one matching is not enforced, two predictions can be counted against the same reference term, so these values are count-derived upper bounds rather than a standard Jaccard set similarity.
 
-## Main Outputs
+**Significance labels:** adjusted p < 0.05 significant; 0.05–0.10 suggestive; > 0.10 not significant.
 
-When a notebook is run, it generates the following CSV and JSON files in the working directory. They are not stored separately in this repository; the results from the runs reported in the manuscript are saved inside the executed notebooks.
+## Outputs
+
+When a notebook is run, it writes the following files to the working directory. They are not stored separately in this repository; the results of the runs reported in the manuscript are shown in the PDF copies of the executed notebooks.
 
 ```text
 input_DATASETNAME_top50_upregulated_genes.csv
@@ -217,20 +226,20 @@ KEGG_upregulated_top10_pathways_DATASETNAME.csv
 KEGG_downregulated_top10_pathways_DATASETNAME.csv
 ```
 
-## Notes on Interpretation
+## Interpretation and limitations
 
-LLM outputs should be interpreted as hypothesis-generating biological summaries.
-
-They should not be treated as statistically validated enrichment results because the LLM does not calculate:
-
-* p-values
-* adjusted p-values
-* enrichment ratios
-* database-ranked enrichment statistics
+* LLM outputs are **hypothesis-generating biological summaries**, not statistically validated enrichment results. The LLM does not calculate p-values, adjusted p-values, enrichment ratios or database-ranked statistics.
+* A gene-level hallucination rate of 0% shows only that the cited genes were present in the input lists; it does not show that the functional claims are correct. Biological plausibility was therefore assessed separately (Supplementary Table S2).
+* GO and KEGG served as a comparison reference, not as biological ground truth; lack of agreement does not imply that an LLM theme is wrong.
+* The Partial category is permissive (one shared gene or token), so partial agreement indicates loose overlap rather than strong agreement.
+* Results are based on two datasets, ten themes or terms per comparison, essentially one run per model and dataset, and one model family.
 
 GO and KEGG remain necessary for database-grounded and statistically supported enrichment analysis.
 
-## Disclaimer
+## License, citation and disclaimer
 
-This project is intended for academic and exploratory research purposes.
-The LLM-generated outputs are not clinical recommendations and should not be used as diagnostic or therapeutic evidence.
+**License.** See [`LICENSE`](LICENSE).
+
+**Citation.** If you use this code or data, please cite the accompanying manuscript. The full citation will be added here after publication.
+
+**Disclaimer.** This project is intended for academic and exploratory research. LLM-generated outputs are not clinical recommendations and must not be used as diagnostic or therapeutic evidence.
