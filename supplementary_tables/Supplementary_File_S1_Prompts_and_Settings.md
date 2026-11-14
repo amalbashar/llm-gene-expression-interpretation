@@ -31,7 +31,7 @@ The same notebook code was used for every run. Between runs, only two values wer
 | Random seed | not specified | not specified |
 | Model snapshot | not pinned (hosted model) | not pinned |
 
-Both models were called at the endpoint https://integrate.api.nvidia.com/v1. The hosted models are no longer available from the provider, so outputs cannot be regenerated exactly. All calls used the helper function below. Its default of `max_tokens=800` was overridden in every stage (Table S1.2).
+Both models were called at the endpoint https://integrate.api.nvidia.com/v1. GPT-OSS-20B remains freely available from the provider, whereas GPT-OSS-120B is no longer freely available. As no model snapshot was pinned, outputs cannot be regenerated exactly for either model. All calls used the helper function below. Its default of `max_tokens=800` was overridden in every stage (Table S1.2).
 
 ```python
 def get_completion(prompt, temperature=0, max_tokens=800):
