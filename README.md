@@ -1,4 +1,4 @@
-# LLM Functional Interpretation of Differential Gene Expression
+# Functional Interpretation of Differentially Expressed Genes using Large Language Models
 
 Code and data accompanying the manuscript:
 
