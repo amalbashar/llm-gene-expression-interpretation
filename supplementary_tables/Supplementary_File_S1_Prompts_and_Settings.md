@@ -1,6 +1,8 @@
 ---
 title: "Supplementary File S1 — Prompt templates, inference settings and evaluation rules"
-subtitle: "Evaluation of Large Language Models for Functional Interpretation of Differentially Expressed Genes (GSE8671 and GSE50114)"
+
+subtitle: "Functional Interpretation of Differentially Expressed Genes using Large Language Models
+(GSE8671 and GSE50114)"
 ---
 
 # S1.1 Overview
